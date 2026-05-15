@@ -46,4 +46,15 @@ describe('TonnetzView', () => {
     fireEvent.click(tris[0]);
     expect(useProjectStore.getState().project.tracks[0].notes).toHaveLength(3);
   });
+
+  it('lights cells whose pitches are sounding at the current tick', () => {
+    useProjectStore.getState().reset();
+    useProjectStore.getState().addNote({ pitch: 60, startTick: 0, durationTicks: 480, velocity: 100 });
+    useTransportStore.getState().setTick(0);
+    render(<TonnetzView />);
+    const lit = screen.getAllByTestId('tonnetz-cell').filter((el) =>
+      (el as unknown as SVGCircleElement).getAttribute('fill') === '#c25b3b'
+    );
+    expect(lit.length).toBeGreaterThanOrEqual(1);
+  });
 });

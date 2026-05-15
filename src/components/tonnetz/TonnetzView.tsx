@@ -1,12 +1,14 @@
 import { buildGrid } from './grid';
 import { buildEdges } from './edges';
 import { buildTriangles } from './triangles';
-import { midiToName } from '../../lib/music/pitch';
+import { midiToName, pitchClass } from '../../lib/music/pitch';
 import { useProjectStore } from '../../state/project';
 import { useTransportStore } from '../../state/transport';
 import { useViewStore, NoteLength } from '../../state/view';
 import { PPQ } from '../../types/project';
 import { previewNote, previewChord } from '../../audio/engine';
+import { computeSoundingNotes } from '../../state/selectors';
+import { findTriad } from '../../lib/tonnetz/chords';
 
 const NOTE_LENGTH_TICKS: Record<NoteLength, number> = {
   '1/16': PPQ / 4, '1/8': PPQ / 2, '1/4': PPQ, '1/2': PPQ * 2, '1/1': PPQ * 4,
@@ -16,9 +18,24 @@ export function TonnetzView() {
   const cells = buildGrid([-3, 3], [-2, 4]);
   const edges = buildEdges(cells);
   const triangles = buildTriangles(cells);
+  const project = useProjectStore((s) => s.project);
   const { addNote, addNotes } = useProjectStore();
   const { playing, recording, currentTick } = useTransportStore();
   const { noteLength } = useViewStore();
+
+  const allNotes = project.tracks.flatMap((t) => t.notes);
+  const sounding = computeSoundingNotes(allNotes, currentTick);
+  const soundingPitches = new Set(sounding.map((n) => n.pitch));
+  const triad = findTriad(sounding.map((n) => n.pitch));
+
+  const litTriangleKey = triad
+    ? [triad.root, (triad.root + (triad.type === 'major' ? 4 : 3)) % 12, (triad.root + 7) % 12]
+        .sort((a, b) => a - b).join(',')
+    : null;
+
+  function trianglePCKey(t: { a: { pitch: number }; b: { pitch: number }; c: { pitch: number } }) {
+    return [t.a.pitch, t.b.pitch, t.c.pitch].map(pitchClass).sort((a, b) => a - b).join(',');
+  }
 
   function canWrite(altKey: boolean) {
     return !altKey && (!playing || recording);
@@ -60,7 +77,9 @@ export function TonnetzView() {
             key={i}
             data-testid="tonnetz-triangle"
             points={`${t.a.x},${t.a.y} ${t.b.x},${t.b.y} ${t.c.x},${t.c.y}`}
-            fill="transparent"
+            fill={litTriangleKey && trianglePCKey(t) === litTriangleKey ? 'rgba(194,91,59,0.22)' : 'transparent'}
+            stroke={litTriangleKey && trianglePCKey(t) === litTriangleKey ? '#c25b3b' : 'none'}
+            strokeWidth={1.5}
             onClick={(e) => {
               previewChord([t.a.pitch, t.b.pitch, t.c.pitch]);
               if (canWrite(e.altKey)) writeNotes([t.a.pitch, t.b.pitch, t.c.pitch]);
@@ -94,7 +113,8 @@ export function TonnetzView() {
               data-testid="tonnetz-cell"
               data-pitch={c.pitch}
               r={14}
-              fill="#d9d3c4" stroke="#b8b1a0"
+              fill={soundingPitches.has(c.pitch) ? '#c25b3b' : '#d9d3c4'}
+              stroke={soundingPitches.has(c.pitch) ? '#8b3a23' : '#b8b1a0'}
               onClick={(e) => handleCellClick(c.pitch, e)}
               style={{ cursor: 'pointer' }}
             />
