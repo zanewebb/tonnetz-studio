@@ -17,5 +17,5 @@ export function exportMidi(project: Project): Blob {
       });
     }
   }
-  return new Blob([midi.toArray()], { type: 'audio/midi' });
+  return new Blob([new Uint8Array(midi.toArray())], { type: 'audio/midi' });
 }

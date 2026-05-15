@@ -9,7 +9,7 @@ function buildFixture(): ArrayBuffer {
   t.name = 'Lead';
   t.addNote({ midi: 60, ticks: 0, durationTicks: 480, velocity: 0.8 });
   t.addNote({ midi: 64, ticks: 480, durationTicks: 240, velocity: 0.8 });
-  return m.toArray().buffer.slice(0);
+  return m.toArray().buffer.slice(0) as ArrayBuffer;
 }
 
 describe('importMidi', () => {
@@ -29,7 +29,7 @@ describe('importMidi', () => {
     m.header.tempos.push({ ticks: 480, bpm: 150 } as any);
     const t = m.addTrack();
     t.addNote({ midi: 60, ticks: 0, durationTicks: 480, velocity: 0.8 });
-    const buf = m.toArray().buffer.slice(0);
+    const buf = m.toArray().buffer.slice(0) as ArrayBuffer;
     const result = importMidi(buf, { strategy: 'merge' });
     expect(result.warnings.some(w => /tempo/i.test(w))).toBe(true);
   });
