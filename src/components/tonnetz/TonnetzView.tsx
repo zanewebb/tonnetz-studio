@@ -1,5 +1,6 @@
 import { buildGrid } from './grid';
 import { buildEdges } from './edges';
+import { buildTriangles } from './triangles';
 import { midiToName } from '../../lib/music/pitch';
 import { useProjectStore } from '../../state/project';
 import { useTransportStore } from '../../state/transport';
@@ -14,6 +15,7 @@ const NOTE_LENGTH_TICKS: Record<NoteLength, number> = {
 export function TonnetzView() {
   const cells = buildGrid([-3, 3], [-2, 4]);
   const edges = buildEdges(cells);
+  const triangles = buildTriangles(cells);
   const { addNote, addNotes } = useProjectStore();
   const { playing, recording, currentTick } = useTransportStore();
   const { noteLength } = useViewStore();
@@ -52,6 +54,21 @@ export function TonnetzView() {
       height="100%"
       style={{ background: '#fffdf7' }}
     >
+      <g>
+        {triangles.map((t, i) => (
+          <polygon
+            key={i}
+            data-testid="tonnetz-triangle"
+            points={`${t.a.x},${t.a.y} ${t.b.x},${t.b.y} ${t.c.x},${t.c.y}`}
+            fill="transparent"
+            onClick={(e) => {
+              previewChord([t.a.pitch, t.b.pitch, t.c.pitch]);
+              if (canWrite(e.altKey)) writeNotes([t.a.pitch, t.b.pitch, t.c.pitch]);
+            }}
+            style={{ cursor: 'pointer' }}
+          />
+        ))}
+      </g>
       <g>
         {edges.map((e, i) => (
           <line

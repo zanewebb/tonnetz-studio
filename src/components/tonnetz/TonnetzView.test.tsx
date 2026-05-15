@@ -38,4 +38,12 @@ describe('TonnetzView', () => {
     fireEvent.click(edges[0]);
     expect(useProjectStore.getState().project.tracks[0].notes).toHaveLength(2);
   });
+
+  it('clicking a triangle adds three notes', () => {
+    useProjectStore.getState().reset();
+    render(<TonnetzView />);
+    const tris = screen.getAllByTestId('tonnetz-triangle');
+    fireEvent.click(tris[0]);
+    expect(useProjectStore.getState().project.tracks[0].notes).toHaveLength(3);
+  });
 });
