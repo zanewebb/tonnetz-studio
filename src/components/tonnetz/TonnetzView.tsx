@@ -9,6 +9,8 @@ import { PPQ } from '../../types/project';
 import { previewNote, previewChord } from '../../audio/engine';
 import { computeSoundingNotes } from '../../state/selectors';
 import { findTriad } from '../../lib/tonnetz/chords';
+import { TrailLayer } from './TrailLayer';
+import { HeatmapLayer } from './HeatmapLayer';
 
 const NOTE_LENGTH_TICKS: Record<NoteLength, number> = {
   '1/16': PPQ / 4, '1/8': PPQ / 2, '1/4': PPQ, '1/2': PPQ * 2, '1/1': PPQ * 4,
@@ -21,7 +23,7 @@ export function TonnetzView() {
   const project = useProjectStore((s) => s.project);
   const { addNote, addNotes } = useProjectStore();
   const { playing, recording, currentTick } = useTransportStore();
-  const { noteLength } = useViewStore();
+  const { noteLength, trailEnabled, heatmapEnabled } = useViewStore();
 
   const allNotes = project.tracks.flatMap((t) => t.notes);
   const sounding = computeSoundingNotes(allNotes, currentTick);
@@ -71,6 +73,7 @@ export function TonnetzView() {
       height="100%"
       style={{ background: '#fffdf7' }}
     >
+      {heatmapEnabled && <HeatmapLayer cells={cells} notes={allNotes} />}
       <g>
         {triangles.map((t, i) => (
           <polygon
@@ -88,6 +91,7 @@ export function TonnetzView() {
           />
         ))}
       </g>
+      {trailEnabled && <TrailLayer cells={cells} sounding={sounding.map((n) => n.pitch)} currentTick={currentTick} />}
       <g>
         {edges.map((e, i) => (
           <line
