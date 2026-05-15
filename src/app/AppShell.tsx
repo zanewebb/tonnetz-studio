@@ -6,6 +6,7 @@ import { ProjectMenu } from '../components/project/ProjectMenu';
 import { ToastList, useToasts } from './Toasts';
 import { startAudio, isAudioStarted } from '../audio/engine';
 import { useProjectStore } from '../state/project';
+import { useSelectionStore } from '../state/selection';
 import {
   isLocalStorageAvailable, loadProjectFromLocalStorage, saveProjectToLocalStorage,
 } from '../persistence/localStorage';
@@ -42,6 +43,25 @@ export function AppShell() {
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
       e.preventDefault();
       togglePlayback();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Global Delete/Backspace/Escape for note selection
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (e.code === 'Delete' || e.code === 'Backspace') {
+        const ids = Array.from(useSelectionStore.getState().selectedNoteIds);
+        if (ids.length === 0) return;
+        e.preventDefault();
+        useProjectStore.getState().removeNotes(ids);
+        useSelectionStore.getState().clearNoteSelection();
+      } else if (e.code === 'Escape') {
+        useSelectionStore.getState().clearNoteSelection();
+      }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
