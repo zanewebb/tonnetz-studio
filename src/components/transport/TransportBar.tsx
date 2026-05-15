@@ -1,31 +1,14 @@
 import { useTransportStore } from '../../state/transport';
 import { useProjectStore } from '../../state/project';
 import { useViewStore, NoteLength } from '../../state/view';
-import { play as audioPlay, stop as audioStop, rescheduleProject, setPosition } from '../../audio/scheduler';
-import { startAudio, setBpm as setAudioBpm } from '../../audio/engine';
-import { startPlayheadSync, stopPlayheadSync } from '../../audio/playheadSync';
+import { setBpm as setAudioBpm } from '../../audio/engine';
+import { startPlayback, stopPlayback } from '../../audio/transport';
 
 export function TransportBar() {
-  const { playing, recording, play, stop, toggleRecord } = useTransportStore();
+  const { playing, recording, toggleRecord } = useTransportStore();
   const project = useProjectStore((s) => s.project);
   const setProjectBpm = useProjectStore((s) => s.setBpm);
   const { noteLength, setNoteLength, pitchClassMode, togglePitchClassMode, trailEnabled, toggleTrail, heatmapEnabled, toggleHeatmap } = useViewStore();
-
-  async function handlePlay() {
-    await startAudio();
-    setAudioBpm(project.bpm);
-    rescheduleProject(project);
-    setPosition(useTransportStore.getState().currentTick);
-    audioPlay();
-    startPlayheadSync();
-    play();
-  }
-
-  function handleStop() {
-    audioStop();
-    stopPlayheadSync();
-    stop();
-  }
 
   function handleBpm(value: string) {
     const n = Number(value);
@@ -37,7 +20,7 @@ export function TransportBar() {
 
   return (
     <div style={{ display: 'flex', gap: 12, alignItems: 'center', padding: 8 }}>
-      <button onClick={playing ? handleStop : handlePlay}>{playing ? '⏹' : '▶'}</button>
+      <button onClick={playing ? stopPlayback : startPlayback}>{playing ? '⏹' : '▶'}</button>
       <button onClick={toggleRecord} style={{ color: recording ? '#c25b3b' : undefined }}>
         ● Rec
       </button>

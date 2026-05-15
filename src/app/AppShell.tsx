@@ -9,6 +9,7 @@ import { useProjectStore } from '../state/project';
 import {
   isLocalStorageAvailable, loadProjectFromLocalStorage, saveProjectToLocalStorage,
 } from '../persistence/localStorage';
+import { togglePlayback } from '../audio/transport';
 
 export function AppShell() {
   const { toasts, push } = useToasts();
@@ -31,6 +32,20 @@ export function AppShell() {
     const t = setTimeout(() => saveProjectToLocalStorage(project), 2000);
     return () => clearTimeout(t);
   }, [project]);
+
+  // Global spacebar play/pause
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.code !== 'Space') return;
+      const target = e.target as HTMLElement | null;
+      // Don't hijack space inside text inputs / number inputs
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      e.preventDefault();
+      togglePlayback();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   async function handleStartAudio() {
     try {
