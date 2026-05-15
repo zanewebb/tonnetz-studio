@@ -20,8 +20,18 @@ describe('Tonnetz coordinates', () => {
   });
 
   it('pitchToAxial inverts axialToPitch when target is anchor', () => {
-    const { u, v } = pitchToAxial(ANCHOR_MIDI);
-    expect(axialToPitch(u, v)).toBe(ANCHOR_MIDI);
+    const ax = pitchToAxial(ANCHOR_MIDI);
+    expect(ax).not.toBeNull();
+    expect(axialToPitch(ax!.u, ax!.v)).toBe(ANCHOR_MIDI);
+  });
+
+  it('pitchToAxial returns non-null for all chromatic pitches (algorithm covers full range)', () => {
+    // The 7-step (fifths) + 4-step (major thirds) basis with v in [-3..3] covers
+    // all 7 residues mod 7, so every pitch has a valid solution and never returns null.
+    // The null return type is reserved for future algorithm variants with tighter bounds.
+    for (let p = 0; p <= 127; p++) {
+      expect(pitchToAxial(p)).not.toBeNull();
+    }
   });
 
   it('neighbours returns six surrounding cells', () => {

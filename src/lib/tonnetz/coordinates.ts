@@ -12,14 +12,14 @@ export function axialToXY(u: number, v: number): { x: number; y: number } {
   return { x: u * DX + v * (DX / 2), y: v === 0 ? 0 : -v * DY };
 }
 
-export function pitchToAxial(pitch: number): Axial {
+export function pitchToAxial(pitch: number): Axial | null {
   const delta = pitch - ANCHOR_MIDI;
   if (delta % 7 === 0) return { u: delta / 7, v: 0 };
   for (const v of [1, -1, 2, -2, 3, -3]) {
     const rem = delta - 4 * v;
     if (rem % 7 === 0) return { u: rem / 7, v };
   }
-  throw new Error(`No nearby axial coordinate for pitch ${pitch}`);
+  return null;
 }
 
 export function neighbours(u: number, v: number): Axial[] {

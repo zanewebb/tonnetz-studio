@@ -18,6 +18,7 @@ describe('transportStore', () => {
     expect(useTransportStore.getState().playing).toBe(true);
     useTransportStore.getState().stop();
     expect(useTransportStore.getState().playing).toBe(false);
+    // currentTick is preserved across stop
   });
 
   it('setTick updates currentTick', () => {

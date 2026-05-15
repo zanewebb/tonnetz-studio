@@ -16,7 +16,7 @@ export const useTransportStore = create<TransportState>((set) => ({
   recording: false,
   currentTick: 0,
   play: () => set({ playing: true }),
-  stop: () => set({ playing: false, currentTick: 0 }),
+  stop: () => set({ playing: false }),
   toggleRecord: () => set((s) => ({ recording: !s.recording })),
   setTick: (currentTick) => set({ currentTick }),
   reset: () => set({ playing: false, recording: false, currentTick: 0 }),

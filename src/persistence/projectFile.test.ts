@@ -17,4 +17,9 @@ describe('projectFile', () => {
   it('rejects malformed JSON', () => {
     expect(() => parseProjectFile('{not json')).toThrow();
   });
+
+  it('rejects a structurally invalid project (missing tracks)', () => {
+    const bad = JSON.stringify({ version: 1, name: 'x', bpm: 120, timeSignature: [4,4], ppq: 480 });
+    expect(() => parseProjectFile(bad)).toThrow(/malformed/);
+  });
 });

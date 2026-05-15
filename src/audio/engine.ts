@@ -22,7 +22,7 @@ export async function startAudio(): Promise<void> {
 }
 
 export function isAudioStarted(): boolean {
-  return started;
+  return Tone.context.state === 'running';
 }
 
 export function setBpm(bpm: number): void {

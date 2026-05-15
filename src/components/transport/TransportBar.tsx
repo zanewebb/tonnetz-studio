@@ -1,7 +1,7 @@
 import { useTransportStore } from '../../state/transport';
 import { useProjectStore } from '../../state/project';
 import { useViewStore, NoteLength } from '../../state/view';
-import { play as audioPlay, stop as audioStop, rescheduleProject } from '../../audio/scheduler';
+import { play as audioPlay, stop as audioStop, rescheduleProject, setPosition } from '../../audio/scheduler';
 import { startAudio, setBpm as setAudioBpm } from '../../audio/engine';
 import { startPlayheadSync, stopPlayheadSync } from '../../audio/playheadSync';
 
@@ -15,6 +15,7 @@ export function TransportBar() {
     await startAudio();
     setAudioBpm(project.bpm);
     rescheduleProject(project);
+    setPosition(useTransportStore.getState().currentTick);
     audioPlay();
     startPlayheadSync();
     play();

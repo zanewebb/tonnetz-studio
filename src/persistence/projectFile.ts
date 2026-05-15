@@ -18,5 +18,13 @@ export function parseProjectFile(text: string): Project {
       `This file was saved with a different version of Tonnetz Studio (v${obj.version}). v1 expected.`
     );
   }
+  if (typeof obj.bpm !== 'number' || !Array.isArray(obj.tracks)) {
+    throw new Error('Project file is malformed (missing bpm or tracks).');
+  }
+  for (const t of obj.tracks as unknown[]) {
+    if (typeof t !== 'object' || t === null || !Array.isArray((t as any).notes)) {
+      throw new Error('Project file is malformed (a track has no notes array).');
+    }
+  }
   return obj as unknown as Project;
 }

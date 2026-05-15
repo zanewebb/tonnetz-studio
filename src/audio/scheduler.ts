@@ -37,6 +37,10 @@ export function rescheduleProject(project: Project): void {
   }
 }
 
+export function setPosition(ticks: number): void {
+  Tone.Transport.position = `${ticks}i`;
+}
+
 export function play(): void {
   Tone.Transport.start();
 }
