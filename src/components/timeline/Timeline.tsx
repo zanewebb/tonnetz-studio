@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, RefObject } from 'react';
 import { useProjectStore } from '../../state/project';
 import { useTransportStore } from '../../state/transport';
 import { useSelectionStore } from '../../state/selection';
@@ -22,9 +22,15 @@ type Drag =
   | { kind: 'maybe-pan'; startX: number; startY: number; shift: boolean }
   | { kind: 'rubber-band'; startX: number; startY: number; curX: number; curY: number; shift: boolean }
   | { kind: 'resize-right'; noteId: string; startTick: number }
-  | { kind: 'resize-left'; noteId: string; endTick: number };
+  | { kind: 'resize-left'; noteId: string; endTick: number }
+  | { kind: 'move'; originals: { id: string; startTick: number; pitch: number }[]; startMouseX: number; startMouseY: number };
 
-export function Timeline() {
+type Props = {
+  scrollRef: RefObject<HTMLDivElement | null>;
+  zoomBy: (factor: number, anchorMouseClientX?: number) => void;
+};
+
+export function Timeline({ scrollRef, zoomBy }: Props) {
   const project = useProjectStore((s) => s.project);
   const setNoteDuration = useProjectStore((s) => s.setNoteDuration);
   const updateNote = useProjectStore((s) => s.updateNote);
@@ -58,6 +64,20 @@ export function Timeline() {
     const rect = svgRef.current!.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
+
+  // Wheel zoom (ctrl/cmd + wheel)
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    function onWheel(ev: WheelEvent) {
+      if (!ev.ctrlKey && !ev.metaKey) return;
+      ev.preventDefault();
+      const factor = ev.deltaY > 0 ? 1 / 1.1 : 1.1;
+      zoomBy(factor, ev.clientX);
+    }
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => { el.removeEventListener('wheel', onWheel); };
+  }, [scrollRef, zoomBy]);
 
   // Right-edge resize tracking
   useEffect(() => {
@@ -97,6 +117,32 @@ export function Timeline() {
         startTick: newStart,
         durationTicks: endTick - newStart,
       });
+    }
+    function onUp() { setDrag({ kind: 'idle' }); }
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [drag, noteLength, updateNote, PX_PER_TICK]);
+
+  // Move tracking
+  useEffect(() => {
+    if (drag.kind !== 'move') return;
+    function onMove(ev: MouseEvent) {
+      if (drag.kind !== 'move') return;
+      const dx = ev.clientX - drag.startMouseX;
+      const dy = ev.clientY - drag.startMouseY;
+      const snap = NOTE_LENGTH_TICKS[noteLength];
+      const dTicks = Math.round(dx / PX_PER_TICK / snap) * snap;
+      const dPitch = -Math.round(dy / ROW_HEIGHT);
+      for (const o of drag.originals) {
+        updateNote(o.id, {
+          startTick: Math.max(0, o.startTick + dTicks),
+          pitch: Math.max(0, Math.min(127, o.pitch + dPitch)),
+        });
+      }
     }
     function onUp() { setDrag({ kind: 'idle' }); }
     window.addEventListener('mousemove', onMove);
@@ -172,17 +218,31 @@ export function Timeline() {
       return;
     }
     e.stopPropagation();
-    if (e.shiftKey) addNoteSelection([noteId]);
-    else if (e.metaKey || e.ctrlKey) toggleNoteSelection(noteId);
-    else setNoteSelection([noteId]);
+
+    // Selection-modifier branches do NOT start a move
+    if (e.shiftKey) { addNoteSelection([noteId]); return; }
+    if (e.metaKey || e.ctrlKey) { toggleNoteSelection(noteId); return; }
+
+    // Plain click: if not yet selected, replace selection with this note
+    let effectiveIds = selectedNoteIds;
+    if (!effectiveIds.has(noteId)) {
+      setNoteSelection([noteId]);
+      effectiveIds = new Set([noteId]);
+    }
+    // Capture originals
+    const originals = notes
+      .filter((n) => effectiveIds.has(n.id))
+      .map((n) => ({ id: n.id, startTick: n.startTick, pitch: n.pitch }));
+    setDrag({ kind: 'move', originals, startMouseX: e.clientX, startMouseY: e.clientY });
   }
 
-  function noteCursor(e: React.MouseEvent, _w: number): string {
+  function noteCursor(e: React.MouseEvent): string {
     const rect = (e.currentTarget as SVGGraphicsElement).getBoundingClientRect();
     const fromLeft = e.clientX - rect.left;
     const fromRight = rect.right - e.clientX;
     if (fromLeft <= RESIZE_HANDLE_PX || fromRight <= RESIZE_HANDLE_PX) return 'ew-resize';
-    return 'pointer';
+    if (drag.kind === 'move') return 'grabbing';
+    return 'grab';
   }
 
   return (
@@ -232,7 +292,7 @@ export function Timeline() {
               rx={1}
               onMouseDown={(e) => onNoteMouseDown(e, n.id, n.startTick, n.durationTicks)}
               onMouseMove={(e) => {
-                (e.currentTarget as SVGRectElement).style.cursor = noteCursor(e, w);
+                (e.currentTarget as SVGRectElement).style.cursor = noteCursor(e);
               }}
             />
             {w > 28 && (

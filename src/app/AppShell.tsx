@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { TonnetzView } from '../components/tonnetz/TonnetzView';
 import { Timeline } from '../components/timeline/Timeline';
 import { TimelineToolbar } from '../components/timeline/TimelineToolbar';
+import { useTimelineZoom } from '../components/timeline/useTimelineZoom';
 import { TransportBar } from '../components/transport/TransportBar';
 import { ProjectMenu } from '../components/project/ProjectMenu';
 import { ToastList, useToasts } from './Toasts';
@@ -22,6 +23,8 @@ export function AppShell() {
   const timelineHeight = useViewStore((s) => s.timelineHeight);
   const setTimelineHeight = useViewStore((s) => s.setTimelineHeight);
   const dividerDrag = useRef<{ startY: number; startHeight: number } | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const { zoomBy, resetZoom } = useTimelineZoom(scrollRef);
 
   useEffect(() => {
     const p = loadProjectFromLocalStorage();
@@ -129,9 +132,9 @@ export function AppShell() {
         }}
         title="Drag to resize"
       />
-      <TimelineToolbar />
-      <footer style={{ height: timelineHeight, overflow: 'auto', background: '#fbf8ef' }}>
-        <Timeline />
+      <TimelineToolbar zoomBy={zoomBy} resetZoom={resetZoom} />
+      <footer ref={scrollRef} style={{ height: timelineHeight, overflow: 'auto', background: '#fbf8ef' }}>
+        <Timeline scrollRef={scrollRef} zoomBy={zoomBy} />
       </footer>
       <ToastList toasts={toasts} />
     </div>

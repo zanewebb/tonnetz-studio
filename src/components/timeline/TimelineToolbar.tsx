@@ -2,8 +2,13 @@ import { useProjectStore } from '../../state/project';
 import { useSelectionStore } from '../../state/selection';
 import { useViewStore, NoteLength } from '../../state/view';
 
-export function TimelineToolbar() {
-  const { noteLength, setNoteLength, timelineZoom, setTimelineZoom } = useViewStore();
+type Props = {
+  zoomBy: (factor: number, anchorMouseClientX?: number) => void;
+  resetZoom: () => void;
+};
+
+export function TimelineToolbar({ zoomBy, resetZoom }: Props) {
+  const { noteLength, setNoteLength, timelineZoom } = useViewStore();
   const selectedNoteIds = useSelectionStore((s) => s.selectedNoteIds);
   const clearNoteSelection = useSelectionStore((s) => s.clearNoteSelection);
   const removeNotes = useProjectStore((s) => s.removeNotes);
@@ -31,10 +36,10 @@ export function TimelineToolbar() {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <span>Zoom</span>
-        <button onClick={() => setTimelineZoom(timelineZoom / 1.25)} title="Zoom out">−</button>
+        <button onClick={() => zoomBy(1/1.25)} title="Zoom out (around playhead)">−</button>
         <span style={{ minWidth: 42, textAlign: 'center' }}>{Math.round(timelineZoom * 100)}%</span>
-        <button onClick={() => setTimelineZoom(timelineZoom * 1.25)} title="Zoom in">+</button>
-        <button onClick={() => setTimelineZoom(1)} title="Reset zoom">⟲</button>
+        <button onClick={() => zoomBy(1.25)} title="Zoom in (around playhead)">+</button>
+        <button onClick={resetZoom} title="Reset zoom">⟲</button>
       </div>
 
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -45,7 +50,7 @@ export function TimelineToolbar() {
             <button onClick={clearNoteSelection}>Clear</button>
           </>
         ) : (
-          <span style={{ color: '#a39d8e' }}>Select notes to edit</span>
+          <span style={{ color: '#a39d8e' }}>Drag notes · Click + Shift / Cmd / Rubber-band to select · Delete or Backspace removes</span>
         )}
       </div>
     </div>
