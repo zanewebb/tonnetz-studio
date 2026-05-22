@@ -12,6 +12,7 @@ type ProjectState = {
   removeNote: (id: string) => void;
   removeNotes: (ids: string[]) => void;
   setNoteDuration: (id: string, durationTicks: number) => void;
+  updateNote: (id: string, partial: Partial<Omit<Note, 'id'>>) => void;
   setBpm: (bpm: number) => void;
   loadProject: (project: Project) => void;
   undo: () => void;
@@ -65,6 +66,14 @@ export const useProjectStore = create<ProjectState>((set) => ({
     const tracks = s.project.tracks.map((t) => ({
       ...t,
       notes: t.notes.map((n) => n.id === id ? { ...n, durationTicks: Math.max(1, durationTicks) } : n),
+    }));
+    return { project: { ...s.project, tracks }, history: snapshot(s) };
+  }),
+
+  updateNote: (id, partial) => set((s) => {
+    const tracks = s.project.tracks.map((t) => ({
+      ...t,
+      notes: t.notes.map((n) => n.id === id ? { ...n, ...partial } : n),
     }));
     return { project: { ...s.project, tracks }, history: snapshot(s) };
   }),

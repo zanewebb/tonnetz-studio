@@ -7,7 +7,7 @@ import { PPQ } from '../../types/project';
 import { midiToName } from '../../lib/music/pitch';
 
 const BAR_TICKS = PPQ * 4;
-const PX_PER_TICK = 0.08;
+const BASE_PX_PER_TICK = 0.08;
 const ROW_HEIGHT = 5;
 const TOP_PAD = 36;
 const RESIZE_HANDLE_PX = 6;
@@ -21,19 +21,23 @@ type Drag =
   | { kind: 'idle' }
   | { kind: 'maybe-pan'; startX: number; startY: number; shift: boolean }
   | { kind: 'rubber-band'; startX: number; startY: number; curX: number; curY: number; shift: boolean }
-  | { kind: 'resize'; noteId: string; originalDuration: number; startTick: number; pointerStartX: number };
+  | { kind: 'resize-right'; noteId: string; startTick: number }
+  | { kind: 'resize-left'; noteId: string; endTick: number };
 
 export function Timeline() {
   const project = useProjectStore((s) => s.project);
   const setNoteDuration = useProjectStore((s) => s.setNoteDuration);
+  const updateNote = useProjectStore((s) => s.updateNote);
   const { currentTick, setTick } = useTransportStore();
   const noteLength = useViewStore((s) => s.noteLength);
+  const timelineZoom = useViewStore((s) => s.timelineZoom);
   const selectedNoteIds = useSelectionStore((s) => s.selectedNoteIds);
   const setNoteSelection = useSelectionStore((s) => s.setNoteSelection);
   const addNoteSelection = useSelectionStore((s) => s.addNoteSelection);
   const toggleNoteSelection = useSelectionStore((s) => s.toggleNoteSelection);
   const clearNoteSelection = useSelectionStore((s) => s.clearNoteSelection);
 
+  const PX_PER_TICK = BASE_PX_PER_TICK * timelineZoom;
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [drag, setDrag] = useState<Drag>({ kind: 'idle' });
 
@@ -50,15 +54,14 @@ export function Timeline() {
   function rowY(pitch: number) {
     return TOP_PAD + (maxPitch - pitch) * ROW_HEIGHT;
   }
-
   function svgPoint(e: React.MouseEvent | MouseEvent): { x: number; y: number } {
     const rect = svgRef.current!.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 
-  // Resize tracking via window listeners (so the user can drag outside the SVG)
+  // Right-edge resize tracking
   useEffect(() => {
-    if (drag.kind !== 'resize') return;
+    if (drag.kind !== 'resize-right') return;
     function onMove(ev: MouseEvent) {
       const rect = svgRef.current?.getBoundingClientRect();
       if (!rect) return;
@@ -77,14 +80,38 @@ export function Timeline() {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
-  }, [drag, noteLength, setNoteDuration]);
+  }, [drag, noteLength, setNoteDuration, PX_PER_TICK]);
+
+  // Left-edge resize tracking
+  useEffect(() => {
+    if (drag.kind !== 'resize-left') return;
+    function onMove(ev: MouseEvent) {
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const x = ev.clientX - rect.left;
+      const tickAtCursor = x / PX_PER_TICK;
+      const endTick = (drag as { endTick: number }).endTick;
+      const snap = NOTE_LENGTH_TICKS[noteLength];
+      const newStart = Math.max(0, Math.min(endTick - snap, Math.round(tickAtCursor / snap) * snap));
+      updateNote((drag as { noteId: string }).noteId, {
+        startTick: newStart,
+        durationTicks: endTick - newStart,
+      });
+    }
+    function onUp() { setDrag({ kind: 'idle' }); }
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [drag, noteLength, updateNote, PX_PER_TICK]);
 
   function onSvgMouseDown(e: React.MouseEvent<SVGSVGElement>) {
     if ((e.target as Element).getAttribute('data-role') !== 'background') return;
     const p = svgPoint(e);
     setDrag({ kind: 'maybe-pan', startX: p.x, startY: p.y, shift: e.shiftKey });
   }
-
   function onSvgMouseMove(e: React.MouseEvent<SVGSVGElement>) {
     if (drag.kind === 'maybe-pan') {
       const p = svgPoint(e);
@@ -97,7 +124,6 @@ export function Timeline() {
       setDrag({ ...drag, curX: p.x, curY: p.y });
     }
   }
-
   function onSvgMouseUp(e: React.MouseEvent<SVGSVGElement>) {
     if (drag.kind === 'maybe-pan') {
       const p = svgPoint(e);
@@ -130,19 +156,33 @@ export function Timeline() {
   }
 
   function onNoteMouseDown(e: React.MouseEvent, noteId: string, startTick: number, duration: number) {
-    // Resize handle? (rightmost RESIZE_HANDLE_PX of the block)
     const rect = (e.currentTarget as SVGGraphicsElement).getBoundingClientRect();
+    const fromLeft = e.clientX - rect.left;
     const fromRight = rect.right - e.clientX;
+    const endTick = startTick + duration;
+
     if (fromRight <= RESIZE_HANDLE_PX) {
       e.stopPropagation();
-      setDrag({ kind: 'resize', noteId, originalDuration: duration, startTick, pointerStartX: e.clientX });
+      setDrag({ kind: 'resize-right', noteId, startTick });
       return;
     }
-    // Otherwise: selection click
+    if (fromLeft <= RESIZE_HANDLE_PX) {
+      e.stopPropagation();
+      setDrag({ kind: 'resize-left', noteId, endTick });
+      return;
+    }
     e.stopPropagation();
     if (e.shiftKey) addNoteSelection([noteId]);
     else if (e.metaKey || e.ctrlKey) toggleNoteSelection(noteId);
     else setNoteSelection([noteId]);
+  }
+
+  function noteCursor(e: React.MouseEvent, _w: number): string {
+    const rect = (e.currentTarget as SVGGraphicsElement).getBoundingClientRect();
+    const fromLeft = e.clientX - rect.left;
+    const fromRight = rect.right - e.clientX;
+    if (fromLeft <= RESIZE_HANDLE_PX || fromRight <= RESIZE_HANDLE_PX) return 'ew-resize';
+    return 'pointer';
   }
 
   return (
@@ -150,15 +190,12 @@ export function Timeline() {
       ref={svgRef}
       width={width}
       height={svgHeight}
-      style={{ background: '#fbf8ef', userSelect: 'none' }}
+      style={{ background: '#fbf8ef', userSelect: 'none', display: 'block' }}
       onMouseDown={onSvgMouseDown}
       onMouseMove={onSvgMouseMove}
       onMouseUp={onSvgMouseUp}
     >
-      {/* Background catcher — must cover the entire SVG so mouseDown targets it */}
       <rect data-role="background" x={0} y={0} width={width} height={svgHeight} fill="transparent" />
-
-      {/* Beat sub-lines */}
       {Array.from({ length: bars * 4 }, (_, i) => {
         const beatInBar = (i % 4) + 1;
         if (beatInBar === 1) return null;
@@ -170,8 +207,6 @@ export function Timeline() {
           </g>
         );
       })}
-
-      {/* Bar lines and labels */}
       {Array.from({ length: bars + 1 }, (_, i) => (
         <g key={`bar-${i}`}>
           <line x1={i * BAR_TICKS * PX_PER_TICK} y1={0}
@@ -183,8 +218,6 @@ export function Timeline() {
           </text>
         </g>
       ))}
-
-      {/* Notes */}
       {notes.map((n) => {
         const x = n.startTick * PX_PER_TICK;
         const w = Math.max(2, n.durationTicks * PX_PER_TICK);
@@ -197,8 +230,10 @@ export function Timeline() {
               stroke={selected ? '#5a1f0e' : 'none'}
               strokeWidth={selected ? 1 : 0}
               rx={1}
-              style={{ cursor: 'pointer' }}
               onMouseDown={(e) => onNoteMouseDown(e, n.id, n.startTick, n.durationTicks)}
+              onMouseMove={(e) => {
+                (e.currentTarget as SVGRectElement).style.cursor = noteCursor(e, w);
+              }}
             />
             {w > 28 && (
               <text x={x + 3} y={rowY(n.pitch) + ROW_HEIGHT - 1.5}
@@ -209,8 +244,6 @@ export function Timeline() {
           </g>
         );
       })}
-
-      {/* Rubber-band rectangle */}
       {drag.kind === 'rubber-band' && (
         <rect
           x={Math.min(drag.startX, drag.curX)}
@@ -223,8 +256,6 @@ export function Timeline() {
           pointerEvents="none"
         />
       )}
-
-      {/* Playhead — last so it draws on top */}
       <line
         data-testid="playhead"
         x1={currentTick * PX_PER_TICK} y1={0}

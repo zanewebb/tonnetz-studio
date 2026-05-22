@@ -1,14 +1,16 @@
 import { useTransportStore } from '../../state/transport';
 import { useProjectStore } from '../../state/project';
-import { useViewStore, NoteLength } from '../../state/view';
-import { setBpm as setAudioBpm } from '../../audio/engine';
+import { useViewStore } from '../../state/view';
 import { startPlayback, stopPlayback } from '../../audio/transport';
+import { setBpm as setAudioBpm } from '../../audio/engine';
 
 export function TransportBar() {
-  const { playing, recording, toggleRecord } = useTransportStore();
+  const playing = useTransportStore((s) => s.playing);
+  const recording = useTransportStore((s) => s.recording);
+  const toggleRecord = useTransportStore((s) => s.toggleRecord);
   const project = useProjectStore((s) => s.project);
   const setProjectBpm = useProjectStore((s) => s.setBpm);
-  const { noteLength, setNoteLength, pitchClassMode, togglePitchClassMode, trailEnabled, toggleTrail, heatmapEnabled, toggleHeatmap } = useViewStore();
+  const { pitchClassMode, togglePitchClassMode, trailEnabled, toggleTrail, heatmapEnabled, toggleHeatmap } = useViewStore();
 
   function handleBpm(value: string) {
     const n = Number(value);
@@ -26,12 +28,6 @@ export function TransportBar() {
       </button>
       <label>
         BPM <input type="number" value={project.bpm} onChange={(e) => handleBpm(e.target.value)} style={{ width: 60 }} />
-      </label>
-      <label>
-        Length
-        <select value={noteLength} onChange={(e) => setNoteLength(e.target.value as NoteLength)}>
-          {(['1/16','1/8','1/4','1/2','1/1'] as NoteLength[]).map((n) => <option key={n} value={n}>{n}</option>)}
-        </select>
       </label>
       <label>
         <input type="checkbox" checked={pitchClassMode} onChange={togglePitchClassMode} /> Pitch-class

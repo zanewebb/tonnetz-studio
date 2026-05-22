@@ -51,4 +51,14 @@ describe('projectStore', () => {
     useProjectStore.getState().setNoteDuration(id, 240);
     expect(useProjectStore.getState().project.tracks[0].notes[0].durationTicks).toBe(240);
   });
+
+  it('updateNote merges partial fields', () => {
+    useProjectStore.getState().addNote({ pitch: 60, startTick: 0, durationTicks: 480, velocity: 100 });
+    const id = useProjectStore.getState().project.tracks[0].notes[0].id;
+    useProjectStore.getState().updateNote(id, { startTick: 240, durationTicks: 240 });
+    const n = useProjectStore.getState().project.tracks[0].notes[0];
+    expect(n.startTick).toBe(240);
+    expect(n.durationTicks).toBe(240);
+    expect(n.pitch).toBe(60); // untouched
+  });
 });

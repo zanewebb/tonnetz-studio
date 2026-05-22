@@ -10,6 +10,8 @@ type ViewState = {
   heatmapEnabled: boolean;
   noteLength: NoteLength;
   octaveAnchor: number;             // used in pitch-class mode
+  timelineHeight: number;
+  timelineZoom: number;
   setPan: (pan: { x: number; y: number }) => void;
   setZoom: (zoom: number) => void;
   togglePitchClassMode: () => void;
@@ -17,6 +19,8 @@ type ViewState = {
   toggleHeatmap: () => void;
   setNoteLength: (n: NoteLength) => void;
   setOctaveAnchor: (oct: number) => void;
+  setTimelineHeight: (h: number) => void;
+  setTimelineZoom: (z: number) => void;
   reset: () => void;
 };
 
@@ -28,6 +32,8 @@ const DEFAULTS = {
   heatmapEnabled: false,
   noteLength: '1/4' as NoteLength,
   octaveAnchor: 4,
+  timelineHeight: 320,
+  timelineZoom: 1,
 };
 
 export const useViewStore = create<ViewState>((set) => ({
@@ -39,5 +45,7 @@ export const useViewStore = create<ViewState>((set) => ({
   toggleHeatmap: () => set((s) => ({ heatmapEnabled: !s.heatmapEnabled })),
   setNoteLength: (noteLength) => set({ noteLength }),
   setOctaveAnchor: (octaveAnchor) => set({ octaveAnchor }),
+  setTimelineHeight: (timelineHeight) => set({ timelineHeight: Math.max(120, Math.min(900, timelineHeight)) }),
+  setTimelineZoom: (timelineZoom) => set({ timelineZoom: Math.max(0.25, Math.min(4, timelineZoom)) }),
   reset: () => set(DEFAULTS),
 }));
