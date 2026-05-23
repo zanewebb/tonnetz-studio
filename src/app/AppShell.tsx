@@ -5,6 +5,7 @@ import { TimelineToolbar } from '../components/timeline/TimelineToolbar';
 import { useTimelineZoom } from '../components/timeline/useTimelineZoom';
 import { TransportBar } from '../components/transport/TransportBar';
 import { ProjectMenu } from '../components/project/ProjectMenu';
+import { DemoMenu } from '../components/project/DemoMenu';
 import { ToastList, useToasts } from './Toasts';
 import { startAudio, isAudioStarted } from '../audio/engine';
 import { togglePlayback } from '../audio/transport';
@@ -119,6 +120,7 @@ export function AppShell() {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 8, borderBottom: '1px solid #eee' }}>
         <strong>Tonnetz Studio</strong>
         <TransportBar />
+        <DemoMenu onError={push} onLoaded={(note) => push(`Loaded: ${note}`)} />
         <ProjectMenu onError={push} />
       </header>
       <main style={{ flex: 1, minHeight: 0, position: 'relative' }}>
