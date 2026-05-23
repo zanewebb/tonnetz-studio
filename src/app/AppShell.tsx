@@ -9,6 +9,7 @@ import { ProjectMenu } from '../components/project/ProjectMenu';
 import { DemoMenu } from '../components/project/DemoMenu';
 import { ViewMenu } from '../components/view/ViewMenu';
 import { ToastList, useToasts } from './Toasts';
+import { AboutModal } from './AboutModal';
 import * as Tone from 'tone';
 import { startAudio, isAudioStarted } from '../audio/engine';
 import { togglePlayback } from '../audio/transport';
@@ -23,6 +24,7 @@ import {
 export function AppShell() {
   const { toasts, push } = useToasts();
   const [audioReady, setAudioReady] = useState(isAudioStarted());
+  const [aboutOpen, setAboutOpen] = useState(false);
   const project = useProjectStore((s) => s.project);
   const loadProject = useProjectStore((s) => s.loadProject);
   const timelineHeight = useViewStore((s) => s.timelineHeight);
@@ -139,6 +141,13 @@ export function AppShell() {
           <TransportBar />
         </div>
         <div className="header-group">
+          <button
+            type="button"
+            className="header-help-btn"
+            onClick={() => setAboutOpen(true)}
+            title="About the Tonnetz"
+            aria-label="About the Tonnetz"
+          >?</button>
           <ViewMenu />
           <DemoMenu onError={push} onLoaded={(note) => push(`Loaded: ${note}`)} />
           <ProjectMenu onError={push} />
@@ -153,6 +162,7 @@ export function AppShell() {
         <Timeline scrollRef={scrollRef} zoomBy={zoomBy} />
       </footer>
       <ToastList toasts={toasts} />
+      <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </div>
   );
 }

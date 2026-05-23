@@ -366,3 +366,122 @@ select { padding-right: 22px; }
   font-size: 11px;
   color: var(--ink-muted);
 }
+
+/* ─── About modal ───────────────────────────────────────────────────── */
+.about-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(40, 32, 22, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+  animation: aboutFadeIn 180ms ease;
+}
+@keyframes aboutFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.about-card {
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 30px 80px rgba(40, 28, 16, 0.30), 0 6px 16px rgba(40, 28, 16, 0.10);
+  max-width: 540px;
+  width: 100%;
+  max-height: 84vh;
+  overflow: auto;
+  padding: 28px 32px 26px;
+  color: var(--ink);
+  line-height: 1.55;
+  animation: aboutSlideUp 220ms ease;
+}
+@keyframes aboutSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.about-close {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+.about-close:hover { background: var(--bg-soft); color: var(--ink); }
+
+.about-title {
+  margin: 0 0 14px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.about-section { margin-top: 14px; }
+.about-section h3 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+.about-section p, .about-section ul {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+.about-section ul { padding-left: 18px; }
+.about-section li { margin: 4px 0; }
+.about-section code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  background: var(--panel);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.about-footer { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+.about-footer p { font-size: 12px; color: var(--ink-muted); }
+
+/* Landing "What's a Tonnetz?" link */
+.landing-link {
+  margin-top: 14px;
+  background: transparent;
+  border: none;
+  color: var(--ink-soft);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-underline-offset: 3px;
+  padding: 4px 8px;
+}
+.landing-link:hover {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+}
+
+/* Header help button */
+.header-help-btn {
+  width: 26px; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+.header-help-btn:hover {
+  background: var(--accent-glow);
+  color: var(--accent);
+  border-color: var(--accent);
+}

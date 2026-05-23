@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AboutModal } from './AboutModal';
 
 const CHORDS = [
   { name: 'C major', vertices: [0, 1, 2] },
@@ -27,6 +28,7 @@ type Props = { onEnter: () => void };
 export function Landing({ onEnter }: Props) {
   const [chordIdx, setChordIdx] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -87,7 +89,11 @@ export function Landing({ onEnter }: Props) {
           <span aria-hidden>▶</span> Enter
         </button>
         <p className="landing-hint">Click to enable audio</p>
+        <button type="button" className="landing-link" onClick={() => setAboutOpen(true)}>
+          What's a Tonnetz?
+        </button>
       </div>
+      <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </div>
   );
 }
