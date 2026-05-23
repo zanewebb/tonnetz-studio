@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Landing } from './Landing';
 import { TonnetzView } from '../components/tonnetz/TonnetzView';
 import { Timeline } from '../components/timeline/Timeline';
 import { TimelineToolbar } from '../components/timeline/TimelineToolbar';
@@ -125,16 +126,7 @@ export function AppShell() {
   }
 
   if (!audioReady) {
-    return (
-      <div style={{
-        position: 'fixed', inset: 0, display: 'flex',
-        alignItems: 'center', justifyContent: 'center', background: '#fffdf7',
-      }}>
-        <button onClick={handleStartAudio} style={{ padding: 16, fontSize: 16 }}>
-          Tap to start audio
-        </button>
-      </div>
-    );
+    return <Landing onEnter={handleStartAudio} />;
   }
 
   return (
