@@ -1,0 +1,28 @@
+{
+  "demos": [
+    {
+      "id": "bach-prelude-c",
+      "title": "Bach — Prelude & Fugue in C Major",
+      "subtitle": "Tier 1 · self-hosted",
+      "url": "demos/bach_bwv846.mid",
+      "fetchMode": "local",
+      "note": "C major arpeggios. Watch the harmonic motion sweep through neighbouring triangles on the Tonnetz."
+    },
+    {
+      "id": "tchaikovsky-seasons",
+      "title": "Tchaikovsky — The Seasons",
+      "subtitle": "Tier 1 · GitHub raw",
+      "url": "https://raw.githubusercontent.com/Tonejs/Midi/master/test/midi/tchaikovsky_seasons.mid",
+      "fetchMode": "direct",
+      "note": "Direct fetch from raw.githubusercontent.com (CORS-permissive). Rich harmonic palette traces a colourful path across the Tonnetz."
+    },
+    {
+      "id": "pachelbel-canon",
+      "title": "Pachelbel — Canon in D (bass line)",
+      "subtitle": "Tier 2 · via CORS proxy",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/36/Pachelbel_Canon_bass_line_%28quarter_notes%29.mid",
+      "fetchMode": "proxy",
+      "note": "Fetched via corsproxy.io. The famous D-A-Bm-F#m-G-D-G-A turnaround tessellates a clear path across the Tonnetz."
+    }
+  ]
+}
