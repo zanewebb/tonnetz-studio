@@ -27,10 +27,11 @@ export function TrailLayer({ cells, sounding, currentTick }: {
         const cell = cells.find((c) => pitchClass(c.pitch) === pitchClass(e.pitch));
         if (!cell) return null;
         const age = currentTick - e.t;
-        const opacity = Math.max(0, 0.55 * (1 - age / 1920));
+        const opacity = Math.max(0, 0.85 * (1 - age / 1920));
+        const radius = 14 + (age / 1920) * 6;   // expanding ring
         return (
-          <circle key={i} cx={cell.x} cy={cell.y} r={14}
-            fill="#f0c8b6" opacity={opacity} stroke="#d8a890" />
+          <circle key={i} cx={cell.x} cy={cell.y} r={radius}
+            fill="none" stroke="#c25b3b" strokeWidth={2} opacity={opacity} />
         );
       })}
     </g>

@@ -5,16 +5,25 @@ import { buildTriangles } from './triangles';
 import { midiToName, pitchClass } from '../../lib/music/pitch';
 import { useProjectStore } from '../../state/project';
 import { useTransportStore } from '../../state/transport';
-import { useViewStore, NoteLength } from '../../state/view';
+import { useViewStore, NoteLength, HarmonyWindow } from '../../state/view';
 import { PPQ } from '../../types/project';
 import { previewNote, previewChord } from '../../audio/engine';
-import { computeSoundingNotes } from '../../state/selectors';
+import { computeSoundingNotes, computeTonalDistribution, computeHarmonicNotes } from '../../state/selectors';
 import { findTriad } from '../../lib/tonnetz/chords';
 import { TrailLayer } from './TrailLayer';
-import { HeatmapLayer } from './HeatmapLayer';
 
 const NOTE_LENGTH_TICKS: Record<NoteLength, number> = {
   '1/16': PPQ / 4, '1/8': PPQ / 2, '1/4': PPQ, '1/2': PPQ * 2, '1/1': PPQ * 4,
+};
+
+const HARMONY_WINDOW_TICKS: Record<HarmonyWindow, number> = {
+  'off': 0,
+  '1/16': PPQ / 4,
+  '1/8': PPQ / 2,
+  '1/4': PPQ,
+  '1/2': PPQ * 2,
+  '1': PPQ * 4,
+  '2': PPQ * 8,
 };
 
 export function TonnetzView() {
@@ -24,14 +33,38 @@ export function TonnetzView() {
   const project = useProjectStore((s) => s.project);
   const { addNote, addNotes } = useProjectStore();
   const { playing, recording, currentTick } = useTransportStore();
-  const { noteLength, trailEnabled, heatmapEnabled, pan, zoom, setPan, setZoom, pitchClassMode, octaveAnchor } = useViewStore();
+  const { noteLength, trailEnabled, heatmapEnabled, pan, zoom, setPan, setZoom, pitchClassMode, octaveAnchor, harmonyWindow } = useViewStore();
 
   const dragStart = useRef<{ x: number; y: number; pan: { x: number; y: number } } | null>(null);
 
   const allNotes = project.tracks.flatMap((t) => t.notes);
   const sounding = computeSoundingNotes(allNotes, currentTick);
   const soundingPitches = new Set(sounding.map((n) => n.pitch));
-  const triad = findTriad(sounding.map((n) => n.pitch));
+
+  // Harmonic memory: widen the note set for chord detection
+  const harmonicNotes = computeHarmonicNotes(allNotes, currentTick, HARMONY_WINDOW_TICKS[harmonyWindow]);
+  const triad = findTriad(harmonicNotes.map((n) => n.pitch));
+
+  // Heatmap: tint cells by tonal distribution
+  const tonalDist = computeTonalDistribution(allNotes);
+  const pcWeights = new Map<number, number>();
+  for (const [pitch, weight] of tonalDist) {
+    const pc = pitchClass(pitch);
+    pcWeights.set(pc, (pcWeights.get(pc) ?? 0) + weight);
+  }
+  const pcMax = Math.max(1, ...Array.from(pcWeights.values()));
+
+  function heatmapFill(pitch: number): string {
+    if (!heatmapEnabled) return '#d9d3c4';
+    const w = (pcWeights.get(pitchClass(pitch)) ?? 0) / pcMax;
+    if (w < 0.05) return '#d9d3c4';
+    // Lerp from default cell color to a warm accent based on density
+    // default rgb(217,211,196) → accent rgb(232,140,80)
+    const r = Math.round(217 + (232 - 217) * w);
+    const g = Math.round(211 + (140 - 211) * w);
+    const b = Math.round(196 + (80 - 196) * w);
+    return `rgb(${r},${g},${b})`;
+  }
 
   const litTriangleKey = triad
     ? [triad.root, (triad.root + (triad.type === 'major' ? 4 : 3)) % 12, (triad.root + 7) % 12]
@@ -110,7 +143,6 @@ export function TonnetzView() {
       onMouseLeave={onMouseUp}
     >
       <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
-        {heatmapEnabled && <HeatmapLayer cells={cells} notes={allNotes} />}
         <g>
           {triangles.map((t, i) => (
             <polygon
@@ -128,7 +160,6 @@ export function TonnetzView() {
             />
           ))}
         </g>
-        {trailEnabled && <TrailLayer cells={cells} sounding={sounding.map((n) => n.pitch)} currentTick={currentTick} />}
         <g>
           {edges.map((e, i) => (
             <line
@@ -154,7 +185,7 @@ export function TonnetzView() {
                 data-testid="tonnetz-cell"
                 data-pitch={c.pitch}
                 r={14}
-                fill={soundingPitches.has(c.pitch) ? '#c25b3b' : '#d9d3c4'}
+                fill={soundingPitches.has(c.pitch) ? '#c25b3b' : heatmapFill(c.pitch)}
                 stroke={soundingPitches.has(c.pitch) ? '#8b3a23' : '#b8b1a0'}
                 onClick={(e) => handleCellClick(c.pitch, e)}
                 style={{ cursor: 'pointer' }}
@@ -165,6 +196,7 @@ export function TonnetzView() {
             </g>
           ))}
         </g>
+        {trailEnabled && <TrailLayer cells={cells} sounding={sounding.map((n) => n.pitch)} currentTick={currentTick} />}
       </g>
     </svg>
   );

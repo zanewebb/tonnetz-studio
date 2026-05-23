@@ -138,23 +138,18 @@ export function AppShell() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 8, borderBottom: '1px solid #eee' }}>
-        <strong>Tonnetz Studio</strong>
+      <header className="app-header">
+        <span className="app-title">Tonnetz Studio</span>
         <TransportBar />
-        <DemoMenu onError={push} onLoaded={(note) => push(`Loaded: ${note}`)} />
-        <ProjectMenu onError={push} />
+        <div className="header-group">
+          <DemoMenu onError={push} onLoaded={(note) => push(`Loaded: ${note}`)} />
+          <ProjectMenu onError={push} />
+        </div>
       </header>
       <main style={{ flex: 1, minHeight: 0, position: 'relative' }}>
         <TonnetzView />
       </main>
-      <div
-        onMouseDown={onDividerMouseDown}
-        style={{
-          height: 6, cursor: 'row-resize', background: '#d8d3c4',
-          borderTop: '1px solid #bcb7a8', borderBottom: '1px solid #bcb7a8',
-        }}
-        title="Drag to resize"
-      />
+      <div onMouseDown={onDividerMouseDown} className="divider" title="Drag to resize" />
       <TimelineToolbar zoomBy={zoomBy} resetZoom={resetZoom} />
       <footer ref={scrollRef} style={{ height: timelineHeight, overflow: 'auto', background: '#fbf8ef' }}>
         <Timeline scrollRef={scrollRef} zoomBy={zoomBy} />

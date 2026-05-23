@@ -22,11 +22,7 @@ export function TimelineToolbar({ zoomBy, resetZoom }: Props) {
   }
 
   return (
-    <div style={{
-      display: 'flex', gap: 16, alignItems: 'center', padding: '6px 12px',
-      background: '#f0ebd9', borderTop: '1px solid #d8d3c4', borderBottom: '1px solid #e6e1d3',
-      fontSize: 12, color: '#5a5246',
-    }}>
+    <div className="timeline-toolbar">
       <label title="Snap grid for click-to-add length, scrub, resize, and move. Hold Alt while dragging to bypass snap.">
         Snap{' '}
         <select value={noteLength} onChange={(e) => setNoteLength(e.target.value as NoteLength)}>

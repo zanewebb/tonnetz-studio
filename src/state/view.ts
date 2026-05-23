@@ -2,6 +2,8 @@ import { create } from 'zustand';
 
 export type NoteLength = '1/16' | '1/8' | '1/4' | '1/2' | '1/1';
 
+export type HarmonyWindow = 'off' | '1/16' | '1/8' | '1/4' | '1/2' | '1' | '2';
+
 type ViewState = {
   pan: { x: number; y: number };
   zoom: number;
@@ -12,6 +14,7 @@ type ViewState = {
   octaveAnchor: number;             // used in pitch-class mode
   timelineHeight: number;
   timelineZoom: number;
+  harmonyWindow: HarmonyWindow;
   setPan: (pan: { x: number; y: number }) => void;
   setZoom: (zoom: number) => void;
   togglePitchClassMode: () => void;
@@ -21,6 +24,7 @@ type ViewState = {
   setOctaveAnchor: (oct: number) => void;
   setTimelineHeight: (h: number) => void;
   setTimelineZoom: (z: number) => void;
+  setHarmonyWindow: (w: HarmonyWindow) => void;
   reset: () => void;
 };
 
@@ -34,6 +38,7 @@ const DEFAULTS = {
   octaveAnchor: 4,
   timelineHeight: 320,
   timelineZoom: 1,
+  harmonyWindow: '1/4' as HarmonyWindow,
 };
 
 export const useViewStore = create<ViewState>((set) => ({
@@ -47,5 +52,6 @@ export const useViewStore = create<ViewState>((set) => ({
   setOctaveAnchor: (octaveAnchor) => set({ octaveAnchor }),
   setTimelineHeight: (timelineHeight) => set({ timelineHeight: Math.max(120, Math.min(900, timelineHeight)) }),
   setTimelineZoom: (timelineZoom) => set({ timelineZoom: Math.max(0.25, Math.min(4, timelineZoom)) }),
+  setHarmonyWindow: (harmonyWindow) => set({ harmonyWindow }),
   reset: () => set(DEFAULTS),
 }));

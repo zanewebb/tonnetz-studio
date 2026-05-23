@@ -13,3 +13,11 @@ export function computeTonalDistribution(notes: Note[]): Map<number, number> {
   }
   return out;
 }
+
+export function computeHarmonicNotes(notes: Note[], tick: number, windowTicks: number): Note[] {
+  // Notes whose original interval intersects [tick - windowTicks, tick]
+  return notes.filter((n) => {
+    const noteEnd = n.startTick + n.durationTicks;
+    return noteEnd >= tick - windowTicks && n.startTick <= tick;
+  });
+}
