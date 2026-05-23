@@ -24,7 +24,13 @@ describe('findTriad', () => {
     expect(findTriad([60, 63, 66])).toBeNull();   // diminished
   });
 
-  it('returns null when more than 3 distinct pitch classes', () => {
-    expect(findTriad([60, 64, 67, 70])).toBeNull();
+  it('finds an embedded triad in a larger pitch set', () => {
+    // C, E, G + Bb (dominant 7th flavor) → C major still detected
+    expect(findTriad([60, 64, 67, 70])).toEqual({ type: 'major', root: 0 });
+  });
+
+  it('returns null when no triad fits in the set', () => {
+    // F, F#, G — no major or minor triad
+    expect(findTriad([65, 66, 67])).toBeNull();
   });
 });

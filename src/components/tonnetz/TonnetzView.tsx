@@ -8,7 +8,7 @@ import { useTransportStore } from '../../state/transport';
 import { useViewStore, NoteLength, HarmonyWindow } from '../../state/view';
 import { PPQ } from '../../types/project';
 import { previewNote, previewChord } from '../../audio/engine';
-import { computeSoundingNotes, computeTonalDistribution, computeHarmonicNotes } from '../../state/selectors';
+import { computeSoundingNotes, computeTonalDistribution, computeHarmonicNotes, computeDyadDistribution, computeTriadDistribution } from '../../state/selectors';
 import { findTriad } from '../../lib/tonnetz/chords';
 import { TrailLayer } from './TrailLayer';
 
@@ -33,7 +33,7 @@ export function TonnetzView() {
   const project = useProjectStore((s) => s.project);
   const { addNote, addNotes } = useProjectStore();
   const { playing, recording, currentTick } = useTransportStore();
-  const { noteLength, trailEnabled, heatmapEnabled, pan, zoom, setPan, setZoom, pitchClassMode, octaveAnchor, harmonyWindow } = useViewStore();
+  const { noteLength, trailEnabled, heatmapEnabled, heatmapScale, pan, zoom, setPan, setZoom, pitchClassMode, octaveAnchor, harmonyWindow } = useViewStore();
 
   const dragStart = useRef<{ x: number; y: number; pan: { x: number; y: number } } | null>(null);
 
@@ -54,9 +54,22 @@ export function TonnetzView() {
   }
   const pcMax = Math.max(1, ...Array.from(pcWeights.values()));
 
+  const dyadWeights = heatmapEnabled ? computeDyadDistribution(allNotes) : new Map<string, number>();
+  const dyadMax = Math.max(1, ...Array.from(dyadWeights.values()));
+  const triadWeights = heatmapEnabled ? computeTriadDistribution(allNotes) : new Map<string, number>();
+  const triadMax = Math.max(1, ...Array.from(triadWeights.values()));
+
+  function applyScale(value: number): number {
+    if (heatmapScale === 'log') {
+      return Math.log1p(value * 9) / Math.log(10);   // maps [0,1] → [0,1] but emphasizes small values
+    }
+    return value;
+  }
+
   function heatmapFill(pitch: number): string {
     if (!heatmapEnabled) return '#d9d3c4';
-    const w = (pcWeights.get(pitchClass(pitch)) ?? 0) / pcMax;
+    const raw = (pcWeights.get(pitchClass(pitch)) ?? 0) / pcMax;
+    const w = applyScale(raw);
     if (w < 0.05) return '#d9d3c4';
     // Lerp from default cell color to a warm accent based on density
     // default rgb(217,211,196) → accent rgb(232,140,80)
@@ -64,6 +77,18 @@ export function TonnetzView() {
     const g = Math.round(211 + (140 - 211) * w);
     const b = Math.round(196 + (80 - 196) * w);
     return `rgb(${r},${g},${b})`;
+  }
+
+  function dyadHeat(pcA: number, pcB: number): number {
+    if (!heatmapEnabled) return 0;
+    const key = [pcA, pcB].sort((a, b) => a - b).join('-');
+    return applyScale((dyadWeights.get(key) ?? 0) / dyadMax);
+  }
+
+  function triadHeat(pcA: number, pcB: number, pcC: number): number {
+    if (!heatmapEnabled) return 0;
+    const key = [pcA, pcB, pcC].sort((a, b) => a - b).join('-');
+    return applyScale((triadWeights.get(key) ?? 0) / triadMax);
   }
 
   const litTriangleKey = triad
@@ -144,21 +169,33 @@ export function TonnetzView() {
     >
       <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
         <g>
-          {triangles.map((t, i) => (
-            <polygon
-              key={i}
-              data-testid="tonnetz-triangle"
-              points={`${t.a.x},${t.a.y} ${t.b.x},${t.b.y} ${t.c.x},${t.c.y}`}
-              fill={litTriangleKey && trianglePCKey(t) === litTriangleKey ? 'rgba(194,91,59,0.22)' : 'transparent'}
-              stroke={litTriangleKey && trianglePCKey(t) === litTriangleKey ? '#c25b3b' : 'none'}
-              strokeWidth={1.5}
-              onClick={(e) => {
-                previewChord([t.a.pitch, t.b.pitch, t.c.pitch]);
-                if (canWrite(e.altKey)) writeNotes([t.a.pitch, t.b.pitch, t.c.pitch]);
-              }}
-              style={{ cursor: 'pointer' }}
-            />
-          ))}
+          {triangles.map((t, i) => {
+            const pcA = pitchClass(t.a.pitch);
+            const pcB = pitchClass(t.b.pitch);
+            const pcC = pitchClass(t.c.pitch);
+            const isLit = litTriangleKey && trianglePCKey(t) === litTriangleKey;
+            const heat = triadHeat(pcA, pcB, pcC);
+            const fill = isLit
+              ? 'rgba(194,91,59,0.32)'
+              : heat > 0.05
+                ? `rgba(194,91,59,${Math.min(0.4, heat * 0.5)})`
+                : 'transparent';
+            return (
+              <polygon
+                key={i}
+                data-testid="tonnetz-triangle"
+                points={`${t.a.x},${t.a.y} ${t.b.x},${t.b.y} ${t.c.x},${t.c.y}`}
+                fill={fill}
+                stroke={isLit ? '#c25b3b' : 'none'}
+                strokeWidth={1.5}
+                onClick={(e) => {
+                  previewChord([t.a.pitch, t.b.pitch, t.c.pitch]);
+                  if (canWrite(e.altKey)) writeNotes([t.a.pitch, t.b.pitch, t.c.pitch]);
+                }}
+                style={{ cursor: 'pointer' }}
+              />
+            );
+          })}
         </g>
         <g>
           {edges.map((e, i) => (
@@ -171,14 +208,18 @@ export function TonnetzView() {
               style={{ cursor: 'pointer' }}
             />
           ))}
-          {edges.map((e, i) => (
-            <line
-              key={`v-${i}`}
-              x1={e.a.x} y1={e.a.y} x2={e.b.x} y2={e.b.y}
-              stroke="#e0dcd2" strokeWidth={1}
-              pointerEvents="none"
-            />
-          ))}
+          {edges.map((e, i) => {
+            const heat = dyadHeat(pitchClass(e.a.pitch), pitchClass(e.b.pitch));
+            return (
+              <line
+                key={`v-${i}`}
+                x1={e.a.x} y1={e.a.y} x2={e.b.x} y2={e.b.y}
+                stroke={heat > 0.05 ? `rgba(194,91,59,${Math.min(0.9, heat)})` : '#e0dcd2'}
+                strokeWidth={heat > 0.05 ? 1 + 2 * heat : 1}
+                pointerEvents="none"
+              />
+            );
+          })}
           {cells.map((c) => (
             <g key={`${c.u},${c.v}`} transform={`translate(${c.x},${c.y})`}>
               <circle
@@ -196,7 +237,7 @@ export function TonnetzView() {
             </g>
           ))}
         </g>
-        {trailEnabled && <TrailLayer cells={cells} sounding={sounding.map((n) => n.pitch)} currentTick={currentTick} />}
+        {trailEnabled && <TrailLayer cells={cells} edges={edges} triangles={triangles} sounding={sounding.map((n) => n.pitch)} currentTick={currentTick} />}
       </g>
     </svg>
   );

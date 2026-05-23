@@ -6,6 +6,7 @@ import { useTimelineZoom } from '../components/timeline/useTimelineZoom';
 import { TransportBar } from '../components/transport/TransportBar';
 import { ProjectMenu } from '../components/project/ProjectMenu';
 import { DemoMenu } from '../components/project/DemoMenu';
+import { ViewMenu } from '../components/view/ViewMenu';
 import { ToastList, useToasts } from './Toasts';
 import * as Tone from 'tone';
 import { startAudio, isAudioStarted } from '../audio/engine';
@@ -139,9 +140,14 @@ export function AppShell() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <header className="app-header">
-        <span className="app-title">Tonnetz Studio</span>
-        <TransportBar />
         <div className="header-group">
+          <span className="app-title">Tonnetz Studio</span>
+        </div>
+        <div className="header-group">
+          <TransportBar />
+        </div>
+        <div className="header-group">
+          <ViewMenu />
           <DemoMenu onError={push} onLoaded={(note) => push(`Loaded: ${note}`)} />
           <ProjectMenu onError={push} />
         </div>

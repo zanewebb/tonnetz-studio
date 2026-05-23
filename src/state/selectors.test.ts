@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeSoundingNotes, computeTonalDistribution, computeHarmonicNotes } from './selectors';
+import { computeSoundingNotes, computeTonalDistribution, computeHarmonicNotes, computeDyadDistribution } from './selectors';
 import { Note } from '../types/project';
 
 const note = (id: string, pitch: number, start: number, dur: number): Note =>
@@ -25,6 +25,21 @@ describe('computeTonalDistribution', () => {
     const d = computeTonalDistribution(notes);
     expect(d.get(60)).toBe(720);
     expect(d.get(64)).toBe(720);
+  });
+});
+
+describe('computeDyadDistribution', () => {
+  it('computeDyadDistribution counts overlapping pitch pairs', () => {
+    const notes = [
+      note('a', 60, 0, 480),     // C: ticks 0-480
+      note('b', 64, 0, 480),     // E: ticks 0-480 (overlaps with a)
+      note('c', 67, 240, 480),   // G: 240-720 (overlaps with both during 240-480)
+    ];
+    const d = computeDyadDistribution(notes);
+    // Pair C-E overlaps fully for 480 ticks
+    expect(d.get('0-4')).toBe(480);
+    // Pair C-G overlaps for 240 ticks (240-480)
+    expect(d.get('0-7')).toBe(240);
   });
 });
 
