@@ -7,8 +7,10 @@ import { TransportBar } from '../components/transport/TransportBar';
 import { ProjectMenu } from '../components/project/ProjectMenu';
 import { DemoMenu } from '../components/project/DemoMenu';
 import { ToastList, useToasts } from './Toasts';
+import * as Tone from 'tone';
 import { startAudio, isAudioStarted } from '../audio/engine';
 import { togglePlayback } from '../audio/transport';
+import { panic } from '../audio/scheduler';
 import { useProjectStore } from '../state/project';
 import { useSelectionStore } from '../state/selection';
 import { useViewStore } from '../state/view';
@@ -51,6 +53,25 @@ export function AppShell() {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => {
+    function cleanup() {
+      try {
+        panic();
+        // Suspend the underlying AudioContext so the OS releases the audio session
+        const ctx = Tone.getContext().rawContext as AudioContext;
+        void ctx.suspend?.();
+      } catch {
+        // best-effort; we're tearing down
+      }
+    }
+    window.addEventListener('beforeunload', cleanup);
+    window.addEventListener('pagehide', cleanup);
+    return () => {
+      window.removeEventListener('beforeunload', cleanup);
+      window.removeEventListener('pagehide', cleanup);
+    };
   }, []);
 
   useEffect(() => {

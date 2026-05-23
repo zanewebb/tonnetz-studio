@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useProjectStore } from '../../state/project';
 import { importMidi } from '../../midi/import';
 import { fetchMidiArrayBuffer, FetchMode } from '../../midi/fetchMidi';
+import { stopPlayback } from '../../audio/transport';
 
 type Demo = {
   id: string;
@@ -32,6 +33,7 @@ export function DemoMenu({ onError, onLoaded }: { onError: (msg: string) => void
     try {
       const buf = await fetchMidiArrayBuffer(url, mode);
       const result = importMidi(buf, { strategy: 'merge' });
+      stopPlayback();
       loadProject(result.project);
       if (result.warnings.length > 0) onError(result.warnings.join(' '));
       if (note && onLoaded) onLoaded(note);

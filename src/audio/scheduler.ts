@@ -47,6 +47,22 @@ export function play(): void {
 
 export function stop(): void {
   Tone.Transport.stop();
+  Tone.Transport.cancel(0);              // cancel ALL future-scheduled events
   Tone.Transport.position = 0;
   getSynth().releaseAll();
+  scheduledIds.clear();                  // we just nuked the transport queue; our id map is stale
+}
+
+export function pause(): void {
+  Tone.Transport.pause();
+  getSynth().releaseAll();
+  // Note: we do NOT cancel scheduled events here — they're still wanted for resume.
+}
+
+export function panic(): void {
+  Tone.Transport.stop();
+  Tone.Transport.cancel(0);
+  Tone.Transport.position = 0;
+  getSynth().releaseAll();
+  scheduledIds.clear();
 }

@@ -2,6 +2,7 @@ import { useProjectStore } from '../../state/project';
 import { serializeProject, parseProjectFile } from '../../persistence/projectFile';
 import { exportMidi } from '../../midi/export';
 import { importMidi } from '../../midi/import';
+import { stopPlayback } from '../../audio/transport';
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -30,10 +31,12 @@ export function ProjectMenu({ onError }: { onError: (msg: string) => void }) {
     try {
       if (file.name.endsWith('.tnz.json')) {
         const text = await file.text();
+        stopPlayback();
         loadProject(parseProjectFile(text));
       } else if (file.name.endsWith('.mid') || file.name.endsWith('.midi')) {
         const buf = await file.arrayBuffer();
         const result = importMidi(buf, { strategy: 'merge' });
+        stopPlayback();
         loadProject(result.project);
         if (result.warnings.length > 0) onError(result.warnings.join(' '));
       } else {
