@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import { Project, Note, emptyProject, noteId } from '../types/project';
+import { useSelectionStore } from './selection';
 
 type NoteInput = Omit<Note, 'id'>;
 
 type ProjectState = {
   project: Project;
   history: Project[];      // undo snapshots
+  epoch: number;
   reset: () => void;
   addNote: (note: NoteInput) => void;
   addNotes: (notes: NoteInput[]) => void;
@@ -28,8 +30,9 @@ function snapshot(state: ProjectState): Project[] {
 export const useProjectStore = create<ProjectState>((set) => ({
   project: emptyProject(),
   history: [],
+  epoch: 0,
 
-  reset: () => set({ project: emptyProject(), history: [] }),
+  reset: () => set((s) => ({ project: emptyProject(), history: [], epoch: s.epoch + 1 })),
 
   addNote: (note) => set((s) => {
     const newNote: Note = { id: noteId(), ...note };
@@ -83,7 +86,10 @@ export const useProjectStore = create<ProjectState>((set) => ({
     history: snapshot(s),
   })),
 
-  loadProject: (project) => set(() => ({ project, history: [] })),
+  loadProject: (project) => {
+    useSelectionStore.getState().clearNoteSelection();
+    set((s) => ({ project, history: [], epoch: s.epoch + 1 }));
+  },
 
   undo: () => set((s) => {
     if (s.history.length === 0) return s;

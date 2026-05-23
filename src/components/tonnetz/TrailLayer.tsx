@@ -3,6 +3,7 @@ import { GridCell } from './grid';
 import { Edge } from './edges';
 import { Triangle } from './triangles';
 import { pitchClass } from '../../lib/music/pitch';
+import { useProjectStore } from '../../state/project';
 
 type CellEntry = { kind: 'cell'; pitch: number; t: number };
 type EdgeEntry = { kind: 'edge'; pcA: number; pcB: number; t: number };
@@ -19,6 +20,11 @@ export function TrailLayer({ cells, edges, triangles, sounding, currentTick }: {
   currentTick: number;
 }) {
   const [trail, setTrail] = useState<TrailEntry[]>([]);
+  const epoch = useProjectStore((s) => s.epoch);
+
+  useEffect(() => {
+    setTrail([]);
+  }, [epoch]);
 
   useEffect(() => {
     setTrail((prev) => {

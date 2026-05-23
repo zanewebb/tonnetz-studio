@@ -61,4 +61,10 @@ describe('projectStore', () => {
     expect(n.durationTicks).toBe(240);
     expect(n.pitch).toBe(60); // untouched
   });
+
+  it('loadProject bumps the epoch counter', () => {
+    const before = useProjectStore.getState().epoch;
+    useProjectStore.getState().loadProject(useProjectStore.getState().project);
+    expect(useProjectStore.getState().epoch).toBe(before + 1);
+  });
 });
