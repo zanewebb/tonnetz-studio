@@ -88,7 +88,7 @@ export function Timeline({ scrollRef, zoomBy }: Props) {
       const x = ev.clientX - rect.left;
       const tickAtCursor = x / PX_PER_TICK;
       const startTick = (drag as { startTick: number }).startTick;
-      const snap = NOTE_LENGTH_TICKS[noteLength];
+      const snap = ev.altKey ? 1 : NOTE_LENGTH_TICKS[noteLength];
       const newEnd = Math.max(startTick + snap, Math.round(tickAtCursor / snap) * snap);
       const newDur = newEnd - startTick;
       setNoteDuration((drag as { noteId: string }).noteId, newDur);
@@ -111,7 +111,7 @@ export function Timeline({ scrollRef, zoomBy }: Props) {
       const x = ev.clientX - rect.left;
       const tickAtCursor = x / PX_PER_TICK;
       const endTick = (drag as { endTick: number }).endTick;
-      const snap = NOTE_LENGTH_TICKS[noteLength];
+      const snap = ev.altKey ? 1 : NOTE_LENGTH_TICKS[noteLength];
       const newStart = Math.max(0, Math.min(endTick - snap, Math.round(tickAtCursor / snap) * snap));
       updateNote((drag as { noteId: string }).noteId, {
         startTick: newStart,
@@ -134,7 +134,7 @@ export function Timeline({ scrollRef, zoomBy }: Props) {
       if (drag.kind !== 'move') return;
       const dx = ev.clientX - drag.startMouseX;
       const dy = ev.clientY - drag.startMouseY;
-      const snap = NOTE_LENGTH_TICKS[noteLength];
+      const snap = ev.altKey ? 1 : NOTE_LENGTH_TICKS[noteLength];
       const dTicks = Math.round(dx / PX_PER_TICK / snap) * snap;
       const dPitch = -Math.round(dy / ROW_HEIGHT);
       for (const o of drag.originals) {

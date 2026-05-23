@@ -27,8 +27,8 @@ export function TimelineToolbar({ zoomBy, resetZoom }: Props) {
       background: '#f0ebd9', borderTop: '1px solid #d8d3c4', borderBottom: '1px solid #e6e1d3',
       fontSize: 12, color: '#5a5246',
     }}>
-      <label>
-        Length{' '}
+      <label title="Snap grid for click-to-add length, scrub, resize, and move. Hold Alt while dragging to bypass snap.">
+        Snap{' '}
         <select value={noteLength} onChange={(e) => setNoteLength(e.target.value as NoteLength)}>
           {(['1/16','1/8','1/4','1/2','1/1'] as NoteLength[]).map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
@@ -50,7 +50,7 @@ export function TimelineToolbar({ zoomBy, resetZoom }: Props) {
             <button onClick={clearNoteSelection}>Clear</button>
           </>
         ) : (
-          <span style={{ color: '#a39d8e' }}>Drag notes · Click + Shift / Cmd / Rubber-band to select · Delete or Backspace removes</span>
+          <span style={{ color: '#a39d8e' }}>Drag notes · Edges resize · Hold Alt to bypass snap · Shift / Cmd / rubber-band to multi-select · Del removes</span>
         )}
       </div>
     </div>
